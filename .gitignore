@@ -1,0 +1,6 @@
+cabal.sandbox.config
+Setup.hs
+dist/
+.cabal-sandbox/
+*.swp
+*.svg
