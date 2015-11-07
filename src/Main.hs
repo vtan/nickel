@@ -9,6 +9,7 @@ import Prelude hiding (exp, sum)
 import Grouped (Grouped)
 import qualified Grouped as Grp
 
+import Control.Applicative
 import Control.Arrow
 import Control.Monad
 import Data.Either
@@ -33,12 +34,10 @@ import qualified Text.Parsec.String as Parsec
 
 
 type Year = Int
-type Month = Int
 type Week = Int
-type Day = Int
 
 data Expense = Expense
-  { expDate :: (Year, Month, Day)
+  { expDate :: Time.Day
   , expAmount :: Int
   , expName :: String
   , expCat :: String
@@ -60,11 +59,16 @@ expense = Expense
     str = Parsec.many1 $ Parsec.noneOf ","
     int = read <$> Parsec.many1 Parsec.digit
 
-date :: Parsec.Parser (Year, Month, Day)
-date = (,,) <$> field 4 <* sep <*> field 2 <* sep <*> field 2
+date :: Parsec.Parser Time.Day
+date = total (Time.fromGregorianValid <$> field 4 <* sep <*> field 2 <* sep <*> field 2)
   where
     field n = read <$> Parsec.count n Parsec.digit
     sep = Parsec.char '-'
+    total parser = do
+      mx <- parser
+      case mx of
+        Just x -> pure x
+        Nothing -> empty
 
 
 
@@ -75,8 +79,8 @@ catWeeklySums exps =
   . Grp.groupBy expCat
   $ Grp.fromValue exps
   where
-    yearWeek (expDate -> (y, m, d)) =
-      let (y', w, _) = Time.toWeekDate $ Time.fromGregorian (fromIntegral y) m d
+    yearWeek (expDate -> day) =
+      let (y', w, _) = Time.toWeekDate day
       in  (fromIntegral y', w)
 
 catWeeklyCharts :: Grp.Grouped '[String, (Year, Week)] Int -> Chart.StackedLayouts Time.LocalTime
@@ -123,13 +127,13 @@ spec = do
         , "exp: 2015-01-01, 100, ggg, kkk, lll"
         ]
       `shouldBe`
-        [ Expense (2015, 1, 1) 103 "ggg" "kkk"
-        , Expense (2015, 12, 21) 12345 "some thing" "cate  gory"
+        [ Expense (Time.fromGregorian 2015 1 1) 103 "ggg" "kkk"
+        , Expense (Time.fromGregorian 2015 12 21) 12345 "some thing" "cate  gory"
         ]
 
 instance Arbitrary Expense where
-  arbitrary = Expense <$> arbPosTriple <*> arbPos <*> arbStr <*> arbStr
+  arbitrary = Expense <$> arbDay <*> arbPos <*> arbStr <*> arbStr
     where
+      arbDay = (`Time.addDays` Time.ModifiedJulianDay 0) . getPositive <$> arbitrary
       arbStr = listOf1 $ elements ['a'..'z']
       arbPos = getPositive <$> arbitrary
-      arbPosTriple = (,,) <$> arbPos <*> arbPos <*> arbPos
