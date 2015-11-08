@@ -9,7 +9,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
-module Grouped where
+module Gold.Grouped where
 
 import Control.Arrow
 import Data.Map (Map)

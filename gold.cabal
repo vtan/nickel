@@ -15,14 +15,12 @@ cabal-version: >=1.10
   --type: git
   --location:
 
-executable gold
+library
   hs-source-dirs: src
-  main-is: Main.hs
-  --other-modules:
+  exposed-modules: Gold.Main, Gold.Grouped
   ghc-options: -Wall
-  --other-extensions:
   build-depends:
-    base >=4.6 && <5,
+    base,
     containers,
     text,
     time,
@@ -32,7 +30,25 @@ executable gold
     Chart,
     Chart-diagrams,
     colour,
-    parsec,
+    parsec
+  default-language: Haskell2010
+
+test-suite test
+  type: exitcode-stdio-1.0
+  hs-source-dirs: tst
+  main-is: Main.hs
+  other-modules: Gold.Main.Test
+  ghc-options: -Wall
+  build-depends:
+    gold,
+    base,
     hspec,
-    QuickCheck
+    QuickCheck,
+    time
+  default-language: Haskell2010
+
+executable gold
+  main-is: Main.hs
+  ghc-options: -Wall
+  build-depends: base, gold
   default-language: Haskell2010
