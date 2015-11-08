@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Main (main, spec) where
@@ -15,6 +16,7 @@ import Control.Monad
 import Data.Either
 import Data.Function
 import Data.List
+import Data.Maybe
 import qualified Data.Foldable as Fol
 import qualified Data.Map as Map
 
@@ -33,8 +35,8 @@ import qualified Text.Parsec.String as Parsec
 
 
 
-type Year = Int
-type Week = Int
+data Week = Week Int Int
+  deriving (Eq, Ord, Show, Read)
 
 data Expense = Expense
   { expDate :: Time.Day
@@ -72,7 +74,7 @@ date = total (Time.fromGregorianValid <$> field 4 <* sep <*> field 2 <* sep <*> 
 
 
 
-catWeeklySums :: [Expense] -> Grouped '[String, (Year, Week)] Int
+catWeeklySums :: [Expense] -> Grouped '[String, Week] Int
 catWeeklySums exps =
     fmap (sum . map expAmount)
   . Grp.groupBy yearWeek
@@ -81,15 +83,15 @@ catWeeklySums exps =
   where
     yearWeek (expDate -> day) =
       let (y', w, _) = Time.toWeekDate day
-      in  (fromIntegral y', w)
+      in  Week (fromIntegral y') w
 
-catWeeklyCharts :: Grp.Grouped '[String, (Year, Week)] Int -> Chart.StackedLayouts Time.LocalTime
+catWeeklyCharts :: Grp.Grouped '[String, Week] Int -> Chart.StackedLayouts Week
 catWeeklyCharts cats = Default.def
   & Lens.set Chart.slayouts_layouts layouts
   where
     layouts = map (Chart.StackedLayout . uncurry weeklyChart) . Map.assocs $ Grp.groups cats
 
-weeklyChart :: String -> Grp.Grouped '[(Year, Week)] Int -> Chart.Layout Time.LocalTime Int
+weeklyChart :: String -> Grp.Grouped '[Week] Int -> Chart.Layout Week Int
 weeklyChart cat weeks = Default.def
   & Lens.set Chart.layout_title cat
   . Lens.set Chart.layout_plots [plot]
@@ -97,10 +99,55 @@ weeklyChart cat weeks = Default.def
     plot = Chart.plotBars $ Default.def
       & Lens.set Chart.plot_bars_values values
       & Lens.set Chart.plot_bars_item_styles [(fillStyle, Nothing)]
-    values = map (ywToLocalTime *** pure) $ Grp.nestedAssocs weeks
+    values = map (id *** pure) $ Grp.nestedAssocs weeks
     fillStyle = Chart.FillStyleSolid $ Colour.opaque Colour.steelblue
-    ywToLocalTime (y, w) =
-      Time.LocalTime (Time.fromWeekDate (fromIntegral y) w 4) Time.midday
+
+instance Chart.PlotValue Week where
+  toValue (Week y w) = 
+    let day = Time.fromWeekDate (fromIntegral y) w 1
+    in  fromIntegral $ Time.toModifiedJulianDay day
+
+  fromValue x =
+    let (y, w, _) = Time.toWeekDate . Time.ModifiedJulianDay $ floor x
+    in  Week (fromIntegral y) w
+
+  autoAxis weeks = Chart.makeAxis (const "") (weeks, [], []) &
+    Lens.set Chart.axis_labels (transpose $ map label weeks)
+    where
+      label yw@(weekLabel -> (yearLab, monthLab)) =
+        let yearStr = fromMaybe "" yearLab
+            monthStr = fromMaybe "" monthLab
+        in  [(yw, monthStr), (yw, yearStr)]
+
+-- Show the next year/month in the label if the year/month changes that week.
+weekLabel :: Week -> (Maybe String, Maybe String)
+weekLabel (Week year week) = (yearLab, monthLab)
+  where
+    yearLab = show sundayYear <$ guard (sundayYear /= year)
+    monthLab = monthNames !! (sundayMonth - 1) <$ guard (sundayMonth /= month)
+    (_, month, _) = Time.toGregorian monday
+    (fromIntegral -> sundayYear, sundayMonth, _) = Time.toGregorian sunday
+    monday = Time.fromWeekDate (fromIntegral year) week 1
+    sunday = Time.fromWeekDate (fromIntegral year) week 7
+
+
+monthNames :: [String]
+monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+{-
+  autoAxis weeks = Chart.AxisData
+    { Chart._axis_visibility = Default.def
+    , Chart._axis_viewport = Chart.vmap (mi, ma)
+    , Chart._axis_tropweiv = Chart.invmap (mi, ma)
+    , Chart._axis_ticks = map (, 5) weeks
+    , Chart._axis_labels = map (pure . (id &&& label)) weeks
+    , Chart._axis_grid = []
+    }
+    where
+      mi = minimum weeks
+      ma = maximum weeks
+      label (Week y w) = show y ++ "-" ++ show w
+      -}
 
 
 
