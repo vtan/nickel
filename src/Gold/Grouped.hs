@@ -13,7 +13,6 @@ module Gold.Grouped where
 
 import Control.Arrow
 import Data.Map (Map)
-import Data.Set (Set)
 import qualified Data.Foldable as Fol
 import qualified Data.Map as Map
 
@@ -172,14 +171,11 @@ forWithKey_ = flip traverseWithKey_
 
 -- Transforming grouped data
 
-class OuterJoin (ks :: [*]) where
-  outerJoin :: (k ~ Last ks, Ord k) => Set k -> Grouped ks a -> Grouped ks (Maybe a)
+class MapGroup (ks :: [*]) where
+  mapGroup :: (k ~ Last ks, Ord k) => (Map k a -> Map k a) -> Grouped ks a -> Grouped ks a
 
-instance OuterJoin (a ': '[]) where
-  outerJoin s (Grouped m) =
-    let m' = (fmap . fmap) Just m
-        s' = Map.fromSet (const $ Value Nothing) s
-    in  Grouped $ m' `Map.union` s'
+instance MapGroup (k ': '[]) where
+  mapGroup f (Grouped m) = Grouped . fmap Value . f . fmap (\(Value x) -> x) $ m
 
-instance OuterJoin (b ': bs) => OuterJoin (a ': b ': bs) where
-  outerJoin s (Grouped m) = Grouped $ fmap (outerJoin s) m
+instance MapGroup (k ': ks) => MapGroup (l ': k ': ks) where
+  mapGroup f (Grouped m) = Grouped $ fmap (mapGroup f) m

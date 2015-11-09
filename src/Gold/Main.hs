@@ -16,6 +16,7 @@ import Control.Monad
 import Data.Either
 import Data.Function
 import Data.List
+import Data.Map (Map)
 import Data.Maybe
 import qualified Data.Foldable as Fol
 import qualified Data.Map as Map
@@ -35,6 +36,15 @@ import qualified Text.Parsec.String as Parsec
 
 data Week = Week Int Int
   deriving (Eq, Ord, Show, Read)
+
+instance Enum Week where
+  toEnum n =
+    let (y, w, _) = Time.toWeekDate $ Time.ModifiedJulianDay (7 * fromIntegral n)
+    in  Week (fromIntegral y) w
+
+  fromEnum (Week y w) =
+    let day = Time.fromWeekDate (fromIntegral y) w 1
+    in  fromIntegral (Time.toModifiedJulianDay day `div` 7)
 
 data Expense = Expense
   { expDate :: Time.Day
@@ -72,9 +82,19 @@ date = total (Time.fromGregorianValid <$> field 4 <* sep <*> field 2 <* sep <*> 
 
 
 
+fillMissingInnerSums :: Map Week Int -> Map Week Int
+fillMissingInnerSums weekSums = weekSums `Map.union` zeroes
+  where
+    zeroes
+      | Map.null weekSums = Map.empty
+      | otherwise = Map.fromList . map (, 0) $ enumFromTo mi ma
+    (mi, _) = Map.findMin weekSums
+    (ma, _) = Map.findMax weekSums
+
 catWeeklySums :: [Expense] -> Grouped '[String, Week] Int
 catWeeklySums exps =
-    fmap (sum . map expAmount)
+    Grp.mapGroup fillMissingInnerSums
+  . fmap (sum . map expAmount)
   . Grp.groupBy yearWeek
   . Grp.groupBy expCat
   $ Grp.fromValue exps
