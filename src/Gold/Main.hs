@@ -11,7 +11,6 @@ import Gold.Grouped (Grouped)
 import qualified Gold.Grouped as Grp
 
 import Control.Applicative
-import Control.Arrow
 import Control.Monad
 import Data.Either
 import Data.Function
@@ -110,15 +109,36 @@ catWeeklyCharts cats = Default.def
     layouts = map (Chart.StackedLayout . uncurry weeklyChart) . Map.assocs $ Grp.groups cats
 
 weeklyChart :: String -> Grp.Grouped '[Week] Int -> Chart.Layout Week Int
-weeklyChart cat weeks = Default.def
+weeklyChart cat weekSums = Default.def
   & Lens.set Chart.layout_title cat
-  . Lens.set Chart.layout_plots [plot]
+  . Lens.set Chart.layout_plots [dataPlot, avg3Plot, avg5Plot]
   where
-    plot = Chart.plotBars $ Default.def
-      & Lens.set Chart.plot_bars_values values
+    dataPlot = Chart.plotBars $ Default.def
+      & Lens.set Chart.plot_bars_values (zip weeks (map pure values))
       & Lens.set Chart.plot_bars_item_styles [(fillStyle, Nothing)]
-    values = map (id *** pure) $ Grp.nestedAssocs weeks
+    avg3Plot = Chart.toPlot $ Default.def
+      & Lens.set Chart.plot_lines_values [zip weeks avgs3]
+    avg5Plot = Chart.toPlot $ Default.def
+      & Lens.set Chart.plot_lines_values [zip weeks avgs5]
+    (weeks, values) = unzip $ Grp.nestedAssocs weekSums
+    avgs3 = map floor . movingAvgs 1 . map fromIntegral $ values
+    avgs5 = map floor . movingAvgs 2 . map fromIntegral $ values
     fillStyle = Chart.FillStyleSolid $ Colour.opaque Colour.steelblue
+
+movingAvgs :: Fractional a => Int -> [a] -> [a]
+movingAvgs r = map ((/ n) . sum . catMaybes) . neighborhoods r
+  where
+    n = fromIntegral $ 2 * r + 1
+
+neighborhoods :: Int -> [a] -> [[Maybe a]]
+neighborhoods radius xs = transpose $ map ($ xs') fs
+  where
+    xs' = map Just xs
+    fs = reverse (map bwdN [1..radius]) ++ [id] ++ map fwdN [1..radius]
+    fwdN n = foldr (.) id $ replicate n fwd
+    bwdN n = foldr (.) id $ replicate n bwd
+    fwd = (++ [Nothing]) . tail
+    bwd = (Nothing :) . init
 
 instance Chart.PlotValue Week where
   toValue (Week y w) =
