@@ -131,6 +131,7 @@ movingAvgs r = map ((/ n) . sum . catMaybes) . neighborhoods r
     n = fromIntegral $ 2 * r + 1
 
 neighborhoods :: Int -> [a] -> [[Maybe a]]
+neighborhoods _ [] = []
 neighborhoods radius xs = transpose $ map ($ xs') fs
   where
     xs' = map Just xs
