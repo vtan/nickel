@@ -126,9 +126,9 @@ weeklyChart cat weekSums = Default.def
     fillStyle = Chart.FillStyleSolid $ Colour.opaque Colour.steelblue
 
 movingAvgs :: Fractional a => Int -> [a] -> [a]
-movingAvgs r = map ((/ n) . sum . catMaybes) . neighborhoods r
+movingAvgs r = map (avg . catMaybes) . neighborhoods r
   where
-    n = fromIntegral $ 2 * r + 1
+    avg = (/) <$> sum <*> fromIntegral . length
 
 neighborhoods :: Int -> [a] -> [[Maybe a]]
 neighborhoods _ [] = []
