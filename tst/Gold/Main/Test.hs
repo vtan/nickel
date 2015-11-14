@@ -36,6 +36,11 @@ spec = do
         , Expense (Time.fromGregorian 2015 12 21) 12345 "some thing" "cate  gory"
         ]
 
+  describe "instance Enum Week" $ do
+
+    prop "fromEnum & toEnum are inverses" $ \n ->
+      fromEnum (toEnum n :: Week) `shouldBe` n
+
   describe "catWeeklySums" $ do
 
     it "is correct for an example" $
@@ -48,7 +53,7 @@ spec = do
           `shouldBe`
           [ ("a", [(Week 2000 1, 350), (Week 2000 2, 110)])
           , ("b", [(Week 2000 1, 90)])
-          , ("c", [(Week 2000 2, 3000), (Week 2000 3, 0), (Week 2000 4, 100)])
+          , ("c", [(Week 2000 2, 300), (Week 2000 3, 0), (Week 2000 4, 100)])
           ]
 
   describe "neighborhoods" $ do

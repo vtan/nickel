@@ -42,7 +42,8 @@ instance Enum Week where
     in  Week (fromIntegral y) w
 
   fromEnum (Week y w) =
-    let day = Time.fromWeekDate (fromIntegral y) w 1
+    -- Because the Julian epoch is a Wednesday.
+    let day = Time.fromWeekDate (fromIntegral y) w 3
     in  fromIntegral (Time.toModifiedJulianDay day `div` 7)
 
 data Expense = Expense
