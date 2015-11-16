@@ -112,19 +112,20 @@ catWeeklyCharts cats = Default.def
 weeklyChart :: String -> Grp.Grouped '[Week] Int -> Chart.Layout Week Int
 weeklyChart cat weekSums = Default.def
   & Lens.set Chart.layout_title cat
-  . Lens.set Chart.layout_plots [dataPlot, avg3Plot, avg5Plot]
+  . Lens.set Chart.layout_plots [dataPlot, avgPlot]
   where
     dataPlot = Chart.plotBars $ Default.def
       & Lens.set Chart.plot_bars_values (zip weeks (map pure values))
       & Lens.set Chart.plot_bars_item_styles [(fillStyle, Nothing)]
-    avg3Plot = Chart.toPlot $ Default.def
-      & Lens.set Chart.plot_lines_values [zip weeks avgs3]
-    avg5Plot = Chart.toPlot $ Default.def
-      & Lens.set Chart.plot_lines_values [zip weeks avgs5]
+    avgPlot = Chart.toPlot $ Default.def
+      & Lens.set Chart.plot_lines_values [zip weeks avgs]
+      & Lens.set Chart.plot_lines_style lineStyle
     (weeks, values) = unzip $ Grp.nestedAssocs weekSums
-    avgs3 = map floor . movingAvgs 1 . map fromIntegral $ values
-    avgs5 = map floor . movingAvgs 2 . map fromIntegral $ values
-    fillStyle = Chart.FillStyleSolid $ Colour.opaque Colour.steelblue
+    avgs = map floor . movingAvgs 2 . map fromIntegral $ values
+    fillStyle = Chart.FillStyleSolid $ Colour.opaque Colour.lightsteelblue
+    lineStyle = Default.def
+      & Lens.set Chart.line_color (Colour.opaque Colour.midnightblue)
+      & Lens.set Chart.line_width 1.5
 
 movingAvgs :: Fractional a => Int -> [a] -> [a]
 movingAvgs r = map (avg . catMaybes) . neighborhoods r
