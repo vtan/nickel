@@ -95,22 +95,22 @@ catWeeklySums :: [Expense] -> Grouped '[String, Week] Int
 catWeeklySums exps =
     Grp.mapGroup fillMissingInnerSums
   . fmap (sum . map expAmount)
-  . Grp.groupBy yearWeek
+  . Grp.groupBy (yearWeek . expDate)
   . Grp.groupBy expCat
   $ Grp.fromValue exps
-  where
-    yearWeek (expDate -> day) =
-      let (y', w, _) = Time.toWeekDate day
-      in  Week (fromIntegral y') w
 
-catWeeklyCharts :: Grp.Grouped '[String, Week] Int -> Chart.StackedLayouts Week
-catWeeklyCharts cats = Default.def
+yearWeek :: Time.Day -> Week
+yearWeek (Time.toWeekDate -> (y, w, _)) = Week (fromIntegral y) w
+
+catWeeklyCharts :: Week -> Grp.Grouped '[String, Week] Int -> Chart.StackedLayouts Week
+catWeeklyCharts currentWeek cats = Default.def
   & Lens.set Chart.slayouts_layouts layouts
   where
-    layouts = map (Chart.StackedLayout . uncurry weeklyChart) . Map.assocs $ Grp.groups cats
+    layouts = map (Chart.StackedLayout . uncurry (weeklyChart currentWeek))
+            . Map.assocs $ Grp.groups cats
 
-weeklyChart :: String -> Grp.Grouped '[Week] Int -> Chart.Layout Week Int
-weeklyChart cat weekSums = Default.def
+weeklyChart :: Week -> String -> Grp.Grouped '[Week] Int -> Chart.Layout Week Int
+weeklyChart currentWeek cat weekSums = Default.def
   & Lens.set Chart.layout_title cat
   . Lens.set Chart.layout_plots [dataPlot, avgPlot]
   where
@@ -118,9 +118,12 @@ weeklyChart cat weekSums = Default.def
       & Lens.set Chart.plot_bars_values (zip weeks (map pure values))
       & Lens.set Chart.plot_bars_item_styles [(fillStyle, Nothing)]
     avgPlot = Chart.toPlot $ Default.def
-      & Lens.set Chart.plot_lines_values [zip weeks avgs]
+      & Lens.set Chart.plot_lines_values [zip closedWeeks avgs]
       & Lens.set Chart.plot_lines_style lineStyle
     (weeks, values) = unzip $ Grp.nestedAssocs weekSums
+    closedWeeks
+      | last weeks == currentWeek = init weeks
+      | otherwise = weeks
     avgs = map floor . movingAvgs 2 . map fromIntegral $ values
     fillStyle = Chart.FillStyleSolid $ Colour.opaque Colour.lightsteelblue
     lineStyle = Default.def
@@ -152,9 +155,12 @@ instance Chart.PlotValue Week where
     let (y, w, _) = Time.toWeekDate . Time.ModifiedJulianDay $ floor x
     in  Week (fromIntegral y) w
 
-  autoAxis weeks = Chart.makeAxis (const "") (weeks, [], []) &
+  autoAxis weeks = Chart.makeAxis (const "") (weeks', [], []) &
     Lens.set Chart.axis_labels (transpose $ map label weeks)
     where
+      weeks'
+        | null weeks = []
+        | otherwise = [pred (minimum weeks)] ++ weeks ++ [succ (maximum weeks)]
       label yw@(weekLabel -> (yearLab, monthLab)) =
         let yearStr = fromMaybe "" yearLab
             monthStr = fromMaybe "" monthLab
@@ -181,9 +187,10 @@ monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
 main :: IO ()
 main = do
   content <- readFile "/home/vtan/doc/pez"
+  today <- Time.localDay . Time.zonedTimeToLocalTime <$> Time.getZonedTime
   let
     sums = catWeeklySums . parseExpenses . lines $ content
     heightFactor = fromIntegral . Fol.length . Grp.groups $ sums
-    chart = catWeeklyCharts sums
+    chart = catWeeklyCharts (yearWeek today) sums
     format = Default.def & Lens.set Chart.fo_size (1000, heightFactor * 500)
   void . Chart.renderableToFile format "weekly.svg" . Chart.toRenderable $ chart
