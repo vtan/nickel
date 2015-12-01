@@ -27,7 +27,7 @@ import qualified Data.Default.Class as Default
 import qualified Data.Time as Time
 import qualified Data.Time.Calendar.WeekDate as Time
 import qualified Graphics.Rendering.Chart as Chart
-import qualified Graphics.Rendering.Chart.Backend.Diagrams as Chart
+import qualified Graphics.Rendering.Chart.Backend.Cairo as Chart
 import qualified Text.Parsec as Parsec
 import qualified Text.Parsec.String as Parsec
 
@@ -192,5 +192,5 @@ main = do
     sums = catWeeklySums . parseExpenses . lines $ content
     heightFactor = fromIntegral . Fol.length . Grp.groups $ sums
     chart = catWeeklyCharts (yearWeek today) sums
-    format = Default.def & Lens.set Chart.fo_size (1000, heightFactor * 500)
+    format = Chart.FileOptions (1000, heightFactor * 500) Chart.SVG
   void . Chart.renderableToFile format "weekly.svg" . Chart.toRenderable $ chart
