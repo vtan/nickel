@@ -5,19 +5,21 @@
 
 module Gold.Main where
 
-import Prelude hiding (exp, sum)
+import Prelude hiding (exp)
 
 import Gold.Grouped (Grouped)
 import qualified Gold.Grouped as Grp
 
 import Control.Applicative
+import Control.Arrow
 import Control.Monad
 import Data.Either
 import Data.Function
 import Data.List
 import Data.Map (Map)
 import Data.Maybe
-import qualified Data.Foldable as Fol
+import Data.Ord
+import qualified Data.Foldable as Foldable
 import qualified Data.Map as Map
 
 import qualified Control.Lens as Lens
@@ -82,19 +84,19 @@ date = total (Time.fromGregorianValid <$> field 4 <* sep <*> field 2 <* sep <*> 
 
 
 
-fillMissingInnerSums :: Map Week Int -> Map Week Int
-fillMissingInnerSums weekSums = weekSums `Map.union` zeroes
+fillMissingInnerWeeks :: a -> Map Week a -> Map Week a
+fillMissingInnerWeeks value weekSums = weekSums `Map.union` zeroes
   where
     zeroes
       | Map.null weekSums = Map.empty
-      | otherwise = Map.fromList . map (, 0) $ enumFromTo mi ma
+      | otherwise = Map.fromList . map (, value) $ enumFromTo mi ma
     (mi, _) = Map.findMin weekSums
     (ma, _) = Map.findMax weekSums
 
-catWeeklySums :: [Expense] -> Grouped '[String, Week] Int
-catWeeklySums exps =
-    Grp.mapGroup fillMissingInnerSums
-  . fmap (sum . map expAmount)
+catWeeklySumsCounts :: [Expense] -> Grouped '[String, Week] (Int, Int)
+catWeeklySumsCounts exps =
+    Grp.mapGroup (fillMissingInnerWeeks (0, 0))
+  . fmap (sum . map expAmount &&& length)
   . Grp.groupBy (yearWeek . expDate)
   . Grp.groupBy expCat
   $ Grp.fromValue exps
@@ -102,12 +104,16 @@ catWeeklySums exps =
 yearWeek :: Time.Day -> Week
 yearWeek (Time.toWeekDate -> (y, w, _)) = Week (fromIntegral y) w
 
-catWeeklyCharts :: Week -> Grp.Grouped '[String, Week] Int -> Chart.StackedLayouts Week
-catWeeklyCharts currentWeek cats = Default.def
+catWeeklyCharts :: Week -> Grp.Grouped '[String, Week] (Int, Int) -> Chart.StackedLayouts Week
+catWeeklyCharts currentWeek catsWeeksSumsCounts = Default.def
   & Lens.set Chart.slayouts_layouts layouts
   where
-    layouts = map (Chart.StackedLayout . uncurry (weeklyChart currentWeek))
-            . Map.assocs $ Grp.groups cats
+    layouts = map Chart.StackedLayout charts
+    charts = map (uncurry $ weeklyChart currentWeek) orderedCatsWeeksSums
+    orderedCatsWeeksSums =
+        (map . fmap . fmap) fst
+      . sortBy (comparing $ Down . Foldable.sum . fmap snd . snd)
+      . Map.assocs $ Grp.groups catsWeeksSumsCounts
 
 weeklyChart :: Week -> String -> Grp.Grouped '[Week] Int -> Chart.Layout Week Int
 weeklyChart currentWeek cat weekSums = Default.def
@@ -189,8 +195,8 @@ main = do
   content <- readFile "/home/vtan/doc/pez"
   today <- Time.localDay . Time.zonedTimeToLocalTime <$> Time.getZonedTime
   let
-    sums = catWeeklySums . parseExpenses . lines $ content
-    heightFactor = fromIntegral . Fol.length . Grp.groups $ sums
+    sums = catWeeklySumsCounts . parseExpenses . lines $ content
+    heightFactor = fromIntegral . Foldable.length . Grp.groups $ sums
     chart = catWeeklyCharts (yearWeek today) sums
     format = Chart.FileOptions (1000, heightFactor * 500) Chart.SVG
   void . Chart.renderableToFile format "weekly.svg" . Chart.toRenderable $ chart
