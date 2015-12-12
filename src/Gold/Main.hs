@@ -21,6 +21,7 @@ import Data.Maybe
 import Data.Ord
 import qualified Data.Foldable as Foldable
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import qualified Control.Lens as Lens
 import qualified Data.Colour as Colour
@@ -161,16 +162,19 @@ instance Chart.PlotValue Week where
     let (y, w, _) = Time.toWeekDate . Time.ModifiedJulianDay $ floor x
     in  Week (fromIntegral y) w
 
-  autoAxis weeks = Chart.makeAxis (const "") (weeks', [], []) &
-    Lens.set Chart.axis_labels (transpose $ map label weeks)
+  autoAxis (Set.toList . Set.fromList -> weeks) = Chart.AxisData
+    { Chart._axis_visibility = Default.def
+    , Chart._axis_viewport = Chart.vmap (mi, ma)
+    , Chart._axis_tropweiv = Chart.invmap (mi, ma)
+    , Chart._axis_ticks = map (,2) weeks
+    , Chart._axis_grid = []
+    , Chart._axis_labels = map catMaybes . transpose $ map label weeks
+    }
     where
-      weeks'
-        | null weeks = []
-        | otherwise = [pred (minimum weeks)] ++ weeks ++ [succ (maximum weeks)]
+      mi = pred $ minimum weeks
+      ma = succ $ maximum weeks
       label yw@(weekLabel -> (yearLab, monthLab)) =
-        let yearStr = fromMaybe "" yearLab
-            monthStr = fromMaybe "" monthLab
-        in  [(yw, monthStr), (yw, yearStr)]
+        [(yw, ) <$> monthLab, (yw, ) <$> yearLab]
 
 -- Show the next year/month in the label if the year/month changes that week.
 weekLabel :: Week -> (Maybe String, Maybe String)
@@ -182,7 +186,6 @@ weekLabel (Week year week) = (yearLab, monthLab)
     (fromIntegral -> sundayYear, sundayMonth, _) = Time.toGregorian sunday
     monday = Time.fromWeekDate (fromIntegral year) week 1
     sunday = Time.fromWeekDate (fromIntegral year) week 7
-
 
 monthNames :: [String]
 monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
