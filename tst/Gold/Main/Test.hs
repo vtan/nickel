@@ -24,12 +24,11 @@ spec = do
 
     it "returns well-formed expenses for a sample input" $
       parseExpenses
-        [ "exp 2015-01-01, 100, ggg, kkk"
-        , "exp: 2015-01-01, 101, ggg"
-        , "exp: 2015-1-01, 102, ggg, kkk"
-        , "exp: 2015-01-01, 103, ggg, kkk"
-        , "exp:2015-12-21,   12345, some thing,cate  gory"
-        , "exp: 2015-01-01, 100, ggg, kkk, lll"
+        [ "- 2015-01-01 101 \"ggg\""
+        , "- 2015-1-01 102 \"ggg\" \"kkk\""
+        , "- 2015-01-01 103 \"ggg\" \"kkk\""
+        , "-2015-12-21   12345 \"some thing\"   \"cate  gory\""
+        , "- 2015-01-01 100 \"ggg\" \"kkk\" \"lll\""
         ]
       `shouldBe`
         [ Expense (Time.fromGregorian 2015 1 1) 103 "ggg" "kkk"
@@ -41,6 +40,7 @@ spec = do
     prop "fromEnum & toEnum are inverses" $ \n ->
       fromEnum (toEnum n :: Week) `shouldBe` n
 
+{-
   describe "catWeeklySums" $ do
 
     it "is correct for an example" $
@@ -55,6 +55,7 @@ spec = do
           , ("b", [(Week 2000 1, 90)])
           , ("c", [(Week 2000 2, 300), (Week 2000 3, 0), (Week 2000 4, 100)])
           ]
+-}
 
   describe "neighborhoods" $ do
 
