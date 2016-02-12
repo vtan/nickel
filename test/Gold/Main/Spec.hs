@@ -1,7 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Gold.Main.Test (spec) where
+module Gold.Main.Spec (spec) where
 
 import Gold.Main
 import qualified Gold.Grouped as Grp

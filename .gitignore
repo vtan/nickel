@@ -2,6 +2,7 @@ cabal.sandbox.config
 Setup.hs
 dist/
 .cabal-sandbox/
+.stack-work/
 *.swp
 *.svg
 *.png
