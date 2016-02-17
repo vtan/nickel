@@ -48,7 +48,11 @@ test-suite gold-test
   type: exitcode-stdio-1.0
   hs-source-dirs: test
   main-is: Spec.hs
-  other-modules: Gold.Main.Spec
+  other-modules:
+    Gold.MainSpec,
+    Gold.ExpenseSpec,
+    Gold.UtilSpec,
+    Gold.WeeklyChartSpec
   ghc-options: -threaded -rtsopts -with-rtsopts=-N 
   build-depends:
     base,
