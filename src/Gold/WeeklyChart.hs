@@ -26,27 +26,27 @@ import qualified Graphics.Rendering.Chart as Chart
 
 
 
-data Week = Week Int Int
+data Week = Week Integer Int
   deriving (Eq, Ord, Show, Read)
 
 instance Enum Week where
   toEnum n =
     let (y, w, _) = Time.toWeekDate $ Time.ModifiedJulianDay (7 * fromIntegral n)
-    in  Week (fromIntegral y) w
+    in  Week y w
 
   fromEnum (Week y w) =
     -- Because the Julian epoch is a Wednesday.
-    let day = Time.fromWeekDate (fromIntegral y) w 3
+    let day = Time.fromWeekDate y w 3
     in  fromIntegral (Time.toModifiedJulianDay day `div` 7)
 
 instance Chart.PlotValue Week where
   toValue (Week y w) =
-    let day = Time.fromWeekDate (fromIntegral y) w 1
+    let day = Time.fromWeekDate y w 1
     in  fromIntegral $ Time.toModifiedJulianDay day
 
   fromValue x =
     let (y, w, _) = Time.toWeekDate . Time.ModifiedJulianDay $ floor x
-    in  Week (fromIntegral y) w
+    in  Week y w
 
   autoAxis (Set.toList . Set.fromList -> weeks) = Chart.AxisData
     { Chart._axis_visibility = Default.def
@@ -63,12 +63,12 @@ instance Chart.PlotValue Week where
         [(yw, ) <$> monthLab, (yw, ) <$> yearLab]
 
 weekOfDay :: Time.Day -> Week
-weekOfDay (Time.toWeekDate -> (y, w, _)) = Week (fromIntegral y) w
+weekOfDay (Time.toWeekDate -> (y, w, _)) = Week y w
 
-mondayOfWeek :: Week -> (Int, Int, Int)
-mondayOfWeek (Week y w) = (fromIntegral y', m, d)
+mondayOfWeek :: Week -> (Integer, Int, Int)
+mondayOfWeek (Week y w) = (y', m, d)
   where
-    (y', m, d) = Time.toGregorian $ Time.fromWeekDate (fromIntegral y) w 1
+    (y', m, d) = Time.toGregorian $ Time.fromWeekDate y w 1
 
 fstOfYearOnWeek :: Week -> Maybe Time.Day
 fstOfYearOnWeek yw@(Week y _)
@@ -76,8 +76,8 @@ fstOfYearOnWeek yw@(Week y _)
   | yw == weekOfDay nextJan1 = Just nextJan1
   | otherwise = Nothing
   where
-    thisJan1 = Time.fromGregorian (fromIntegral y) 1 1
-    nextJan1 = Time.fromGregorian (fromIntegral y + 1) 1 1
+    thisJan1 = Time.fromGregorian y 1 1
+    nextJan1 = Time.fromGregorian (y + 1) 1 1
 
 fstOfMonthOnWeek :: Week -> Maybe Time.Day
 fstOfMonthOnWeek yw
@@ -85,10 +85,10 @@ fstOfMonthOnWeek yw
   | yw == weekOfDay nextMo1 = Just nextMo1
   | otherwise = Nothing
   where
-    thisMo1 = Time.fromGregorian (fromIntegral y) m 1
+    thisMo1 = Time.fromGregorian y m 1
     nextMo1
-      | m == 12 = Time.fromGregorian (fromIntegral y + 1) 1 1
-      | otherwise = Time.fromGregorian (fromIntegral y) (m + 1) 1
+      | m == 12 = Time.fromGregorian (y + 1) 1 1
+      | otherwise = Time.fromGregorian y (m + 1) 1
     (y, m, _) = mondayOfWeek yw
 
 

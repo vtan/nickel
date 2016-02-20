@@ -22,13 +22,13 @@ spec = do
   describe "fstOfYearOnWeek" $ do
 
     prop "Just if 1st Jan is that week" $ \(arbYear -> y) ->
-      let d = Time.fromGregorian (fromIntegral y) 1 1
+      let d = Time.fromGregorian y 1 1
       in  fstOfYearOnWeek (weekOfDay d) `shouldBe` Just d
 
   describe "fstOfMonthOnWeek" $ do
 
     prop "Just if the 1st is that week" $ \(arbYear -> y) (arbMonth -> m) ->
-      let d = Time.fromGregorian (fromIntegral y) m 1
+      let d = Time.fromGregorian y m 1
       in  fstOfMonthOnWeek (weekOfDay d) `shouldBe` Just d
 {-
   describe "catWeeklySums" $ do
@@ -56,7 +56,7 @@ instance Arbitrary Expense where
       arbPos = getPositive <$> arbitrary
 -}
 
-newtype ArbYear = ArbYear { arbYear :: Int } deriving (Show)
+newtype ArbYear = ArbYear { arbYear :: Integer } deriving (Show)
 instance Arbitrary ArbYear where arbitrary = ArbYear <$> choose (1900, 2100)
 
 newtype ArbMonth = ArbMonth { arbMonth :: Int } deriving (Show)
