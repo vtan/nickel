@@ -7,7 +7,7 @@ module Gold.WeeklyChart where
 import Gold.Expense
 import Gold.Util
 
-import Control.Monad
+import Control.Arrow
 import Data.Function
 import Data.List
 import Data.Maybe
@@ -64,6 +64,32 @@ instance Chart.PlotValue Week where
 
 weekOfDay :: Time.Day -> Week
 weekOfDay (Time.toWeekDate -> (y, w, _)) = Week (fromIntegral y) w
+
+mondayOfWeek :: Week -> (Int, Int, Int)
+mondayOfWeek (Week y w) = (fromIntegral y', m, d)
+  where
+    (y', m, d) = Time.toGregorian $ Time.fromWeekDate (fromIntegral y) w 1
+
+fstOfYearOnWeek :: Week -> Maybe Time.Day
+fstOfYearOnWeek yw@(Week y _)
+  | yw == weekOfDay thisJan1 = Just thisJan1
+  | yw == weekOfDay nextJan1 = Just nextJan1
+  | otherwise = Nothing
+  where
+    thisJan1 = Time.fromGregorian (fromIntegral y) 1 1
+    nextJan1 = Time.fromGregorian (fromIntegral y + 1) 1 1
+
+fstOfMonthOnWeek :: Week -> Maybe Time.Day
+fstOfMonthOnWeek yw
+  | yw == weekOfDay thisMo1 = Just thisMo1
+  | yw == weekOfDay nextMo1 = Just nextMo1
+  | otherwise = Nothing
+  where
+    thisMo1 = Time.fromGregorian (fromIntegral y) m 1
+    nextMo1
+      | m == 12 = Time.fromGregorian (fromIntegral y + 1) 1 1
+      | otherwise = Time.fromGregorian (fromIntegral y) (m + 1) 1
+    (y, m, _) = mondayOfWeek yw
 
 
 
@@ -132,14 +158,12 @@ smoothSums currentWeek weeksSums = Map.fromAscList $ zip closedWeeks avgs
 
 -- Show the next year/month in the label if the year/month changes that week.
 weekLabel :: Week -> (Maybe String, Maybe String)
-weekLabel (Week year week) = (yearLab, monthLab)
+weekLabel = yearMonthLabel . fstYearMonth
   where
-    yearLab = show sundayYear <$ guard (sundayYear /= year)
-    monthLab = monthNames !! (sundayMonth - 1) <$ guard (sundayMonth /= month)
-    (_, month, _) = Time.toGregorian monday
-    (fromIntegral -> sundayYear, sundayMonth, _) = Time.toGregorian sunday
-    monday = Time.fromWeekDate (fromIntegral year) week 1
-    sunday = Time.fromWeekDate (fromIntegral year) week 7
+    yearMonthLabel = fmap yearLabel *** fmap monthLabel
+    fstYearMonth = fstOfYearOnWeek &&& fstOfMonthOnWeek
+    yearLabel (Time.toGregorian -> (y, _, _)) = show y
+    monthLabel (Time.toGregorian -> (_, m, _)) = monthNames !! (m - 1)
 
 monthNames :: [String]
 monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",

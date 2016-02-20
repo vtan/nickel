@@ -1,19 +1,35 @@
+{-# LANGUAGE ViewPatterns #-}
+
 module Gold.WeeklyChartSpec (spec) where
 
 import Gold.WeeklyChart
 
 import Test.Hspec
 import Test.Hspec.QuickCheck
+import Test.QuickCheck
+import qualified Data.Time as Time
 
 
 
 spec :: Spec
-spec =
+spec = do
 
   describe "instance Enum Week" $ do
 
     prop "fromEnum & toEnum are inverses" $ \n ->
       fromEnum (toEnum n :: Week) `shouldBe` n
+
+  describe "fstOfYearOnWeek" $ do
+
+    prop "Just if 1st Jan is that week" $ \(arbYear -> y) ->
+      let d = Time.fromGregorian (fromIntegral y) 1 1
+      in  fstOfYearOnWeek (weekOfDay d) `shouldBe` Just d
+
+  describe "fstOfMonthOnWeek" $ do
+
+    prop "Just if the 1st is that week" $ \(arbYear -> y) (arbMonth -> m) ->
+      let d = Time.fromGregorian (fromIntegral y) m 1
+      in  fstOfMonthOnWeek (weekOfDay d) `shouldBe` Just d
 {-
   describe "catWeeklySums" $ do
 
@@ -39,3 +55,9 @@ instance Arbitrary Expense where
       arbStr = listOf1 $ elements ['a'..'z']
       arbPos = getPositive <$> arbitrary
 -}
+
+newtype ArbYear = ArbYear { arbYear :: Int } deriving (Show)
+instance Arbitrary ArbYear where arbitrary = ArbYear <$> choose (1900, 2100)
+
+newtype ArbMonth = ArbMonth { arbMonth :: Int } deriving (Show)
+instance Arbitrary ArbMonth where arbitrary = ArbMonth <$> choose (1, 12)
