@@ -1,7 +1,3 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE TupleSections #-}
-{-# LANGUAGE ViewPatterns #-}
-
 module Gold.Main where
 
 import Gold.Account
@@ -12,7 +8,6 @@ import Control.Monad
 import System.IO
 import qualified Data.Map as Map
 
-import qualified Data.Time as Time
 import qualified Graphics.Rendering.Chart as Chart
 import qualified Graphics.Rendering.Chart.Backend.Cairo as Chart
 
@@ -21,9 +16,8 @@ import qualified Graphics.Rendering.Chart.Backend.Cairo as Chart
 main :: IO ()
 main = do
   content <- readFile "/home/vtan/doc/pez"
-  today <- Time.localDay . Time.zonedTimeToLocalTime <$> Time.getZonedTime
+  w <- thisWeek
   let
-    w = weekOfDay today
     accs = parseAccounts . lines $ content
     exps = [e | ParsedExpense e <- accs]
     catsExpss = tagGroupBy expCat $ exps

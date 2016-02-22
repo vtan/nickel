@@ -65,6 +65,10 @@ instance Chart.PlotValue Week where
 weekOfDay :: Time.Day -> Week
 weekOfDay (Time.toWeekDate -> (y, w, _)) = Week y w
 
+thisWeek :: IO Week
+thisWeek =
+  weekOfDay . Time.localDay . Time.zonedTimeToLocalTime <$> Time.getZonedTime
+
 mondayOfWeek :: Week -> (Integer, Int, Int)
 mondayOfWeek (Week y w) = (y', m, d)
   where
@@ -103,7 +107,7 @@ data WeeklyData = WeeklyData
 weeklyData :: Week -> String -> [Expense] -> WeeklyData
 weeklyData currentWeek name exps = WeeklyData{..}
   where
-    wdSums = fillMissingInnerWeeks 0
+    wdSums = fillMissingInnerWeeks 0 currentWeek
            . fmap (sum . map expAmount)
            . tagGroupBy (weekOfDay . expDate)
            $ exps
@@ -138,14 +142,13 @@ weeklyChart WeeklyData{..} = Default.def
 
 
 
-fillMissingInnerWeeks :: a -> Map Week a -> Map Week a
-fillMissingInnerWeeks value weekSums = weekSums `Map.union` zeroes
+fillMissingInnerWeeks :: a -> Week -> Map Week a -> Map Week a
+fillMissingInnerWeeks x currentWeek weekSums = weekSums `Map.union` zeroes
   where
     zeroes
       | Map.null weekSums = Map.empty
-      | otherwise = Map.fromList . map (, value) $ enumFromTo mi ma
+      | otherwise = Map.fromList . map (,x) $ enumFromTo mi currentWeek
     (mi, _) = Map.findMin weekSums
-    (ma, _) = Map.findMax weekSums
 
 smoothSums :: Week -> Map Week Int -> Map Week Int
 smoothSums currentWeek weeksSums = Map.fromAscList $ zip closedWeeks avgs
