@@ -4,7 +4,7 @@
 
 module Gold.WeeklyChart where
 
-import Gold.Expense
+import Gold.Account
 import Gold.Util
 
 import Control.Arrow
