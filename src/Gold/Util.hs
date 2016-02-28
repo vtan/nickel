@@ -3,12 +3,23 @@ module Gold.Util where
 import Data.List
 import Data.Map (Map)
 import Data.Maybe
+import qualified Data.Foldable as Fold
 import qualified Data.Map as Map
 
 
 
 tagGroupBy :: Ord k => (a -> k) -> [a] -> Map k [a]
 tagGroupBy f = Map.fromListWith (++) . map (\x -> (f x, [x]))
+
+minimum' :: (Foldable t, Ord a) => t a -> Maybe a
+minimum' x
+  | Fold.null x = Nothing
+  | otherwise = Just $ Fold.minimum x
+
+maximum' :: (Foldable t, Ord a) => t a -> Maybe a
+maximum' x
+  | Fold.null x = Nothing
+  | otherwise = Just $ Fold.maximum x
 
 movingAvgs :: Fractional a => Int -> [a] -> [a]
 movingAvgs r = map (avg . catMaybes) . neighborhoods r

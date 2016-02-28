@@ -3,13 +3,11 @@
 module Gold.WeeklyChartSpec (spec) where
 
 import Gold.Account
+import Gold.Util
 import Gold.WeeklyChart
 
-import Data.List
-import Data.Maybe
-import Data.Ord
+import qualified Data.Foldable as Fold
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 
 import Test.Hspec
 import Test.Hspec.QuickCheck
@@ -55,28 +53,33 @@ spec = do
       wdSmoothSums (weeklyData (Week 2000 1) "a" []) `shouldBe` mempty
 
     prop "the earliest sum is on the week of the earliest expense" $
-      \(arbWeek -> w) (map arbExpense . getNonEmpty -> exps) ->
+      \(arbWeek -> w) (arbExpenses -> exps) ->
         (fst . Map.findMin $ wdSums (weeklyData w "" exps)) `shouldBe`
         (weekOfDay . minimum . map expDate $ exps)
 
     prop "the last sum is on the week of the last expense" $
-      \(arbWeek -> w) (map arbExpense . getNonEmpty -> exps) ->
+      \(arbWeek -> w) (arbExpenses -> exps) ->
         (fst . Map.findMax $ wdSums (weeklyData w "" exps)) `shouldBe`
         (weekOfDay . maximum . map expDate $ exps)
 
     prop "the earliest smooth sum is on the week of the earliest expense" $
-      \(arbWeek -> w) (map arbExpense . getNonEmpty -> exps) ->
+      \(arbWeek -> w) (arbExpenses -> exps) ->
         (fst . Map.findMin $ wdSmoothSums (weeklyData w "" exps)) `shouldBe`
         (weekOfDay . minimum . map expDate $ exps)
 
     prop "the last smooth sum is on the week of the last expense before\
          \ the current week" $
-      \(arbWeek -> w) (map arbExpense . getNonEmpty -> exps) ->
-        let lastSmoothSum = listToMaybe . Set.toDescList . Map.keysSet
-                          $ wdSmoothSums (weeklyData w "" exps)
-            lastExpBeforeCur = listToMaybe . sortBy (comparing Down)
-                             . filter (<w) . map (weekOfDay . expDate) $ exps
+      \(arbWeek -> w) (arbExpenses -> exps) ->
+        let lastSmoothSum =
+              maximum' . Map.keysSet $ wdSmoothSums (weeklyData w "" exps)
+            lastExpBeforeCur =
+              maximum' . filter (<w) . map (weekOfDay . expDate) $ exps
         in  lastSmoothSum `shouldBe` lastExpBeforeCur
+
+    prop "the sum of the sums is the sum of the expenses" $
+      \(arbWeek -> w) (arbExpenses -> exps) ->
+        (Fold.sum . wdSums $ weeklyData w "" exps) `shouldBe`
+        (sum . map expAmount $ exps)
 
 
 
@@ -91,11 +94,11 @@ instance Arbitrary ArbWeek where
   arbitrary = ArbWeek . weekOfDay . Time.ModifiedJulianDay . getPositive
           <$> arbitrary
 
-newtype ArbExpense = ArbExpense { arbExpense :: Expense } deriving (Show)
-instance Arbitrary ArbExpense where
-  arbitrary = ArbExpense <$> arbExp
+newtype ArbExpenses = ArbExpenses { arbExpenses :: [Expense] } deriving (Show)
+instance Arbitrary ArbExpenses where
+  arbitrary = ArbExpenses <$> listOf1 genExp
     where
-      arbExp = Expense <$> arbDay <*> arbPos <*> arbStr <*> arbStr
-      arbDay = Time.ModifiedJulianDay . getPositive <$> arbitrary
-      arbStr = listOf1 $ elements ['a'..'z']
-      arbPos = getPositive <$> arbitrary
+      genExp = Expense <$> genDay <*> genPos <*> genStr <*> genStr
+      genDay = Time.ModifiedJulianDay . getPositive <$> arbitrary
+      genStr = listOf1 $ elements ['a'..'z']
+      genPos = getPositive <$> arbitrary
