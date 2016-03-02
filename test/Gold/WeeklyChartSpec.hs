@@ -6,6 +6,7 @@ import Gold.Account
 import Gold.Util
 import Gold.WeeklyChart
 
+import Control.Monad
 import qualified Data.Foldable as Fold
 import qualified Data.Map as Map
 
@@ -46,40 +47,51 @@ spec = do
 
   describe "weeklyData" $ do
 
-    it "yields empty sums for empty expenses" $
-      wdSums (weeklyData (Week 2000 1) "a" []) `shouldBe` mempty
+    describe "wdSums" $ do
 
-    it "yields empty smooth sums for empty expenses" $
-      wdSmoothSums (weeklyData (Week 2000 1) "a" []) `shouldBe` mempty
+      it "is empty for empty expenses" $
+        wdSums (weeklyData (Week 2000 1) "a" []) `shouldBe` mempty
 
-    prop "the earliest sum is on the week of the earliest expense" $
-      \(arbWeek -> w) (arbExpenses -> exps) ->
-        (fst . Map.findMin $ wdSums (weeklyData w "" exps)) `shouldBe`
-        (weekOfDay . minimum . map expDate $ exps)
+      prop "starts on the week of the earliest expense" $
+        \(arbWeek -> w) (arbExpenses -> exps) ->
+          (minimum' . Map.keysSet $ wdSums (weeklyData w "" exps)) `shouldBe`
+          (minimum' . map (weekOfDay . expDate) $ exps)
 
-    prop "the last sum is on the week of the last expense" $
-      \(arbWeek -> w) (arbExpenses -> exps) ->
-        (fst . Map.findMax $ wdSums (weeklyData w "" exps)) `shouldBe`
-        (weekOfDay . maximum . map expDate $ exps)
+      prop "ends on the week of the last expense" $
+        \(arbWeek -> w) (arbExpenses -> exps) ->
+          (maximum' . Map.keysSet $ wdSums (weeklyData w "" exps)) `shouldBe`
+          (maximum' . map (weekOfDay . expDate) $ exps)
 
-    prop "the earliest smooth sum is on the week of the earliest expense" $
-      \(arbWeek -> w) (arbExpenses -> exps) ->
-        (fst . Map.findMin $ wdSmoothSums (weeklyData w "" exps)) `shouldBe`
-        (weekOfDay . minimum . map expDate $ exps)
+      prop "has the same sum as expenses" $
+        \(arbWeek -> w) (arbExpenses -> exps) ->
+          (Fold.sum . wdSums $ weeklyData w "" exps) `shouldBe`
+          (sum . map expAmount $ exps)
 
-    prop "the last smooth sum is on the week of the last expense before\
-         \ the current week" $
-      \(arbWeek -> w) (arbExpenses -> exps) ->
-        let lastSmoothSum =
-              maximum' . Map.keysSet $ wdSmoothSums (weeklyData w "" exps)
-            lastExpBeforeCur =
-              maximum' . filter (<w) . map (weekOfDay . expDate) $ exps
-        in  lastSmoothSum `shouldBe` lastExpBeforeCur
+    describe "wdSmoothSums" $ do
 
-    prop "the sum of the sums is the sum of the expenses" $
-      \(arbWeek -> w) (arbExpenses -> exps) ->
-        (Fold.sum . wdSums $ weeklyData w "" exps) `shouldBe`
-        (sum . map expAmount $ exps)
+      it "is empty for empty expenses" $
+        wdSmoothSums (weeklyData (Week 2000 1) "a" []) `shouldBe` mempty
+
+      prop "starts on the week of the earliest expense before the current\
+           \ week" $
+        \(arbWeek -> w) (arbExpenses -> exps) ->
+          (minimum' . Map.keysSet $ wdSmoothSums (weeklyData w "" exps))
+          `shouldBe`
+          (minimum' . filter (<w) . map (weekOfDay . expDate) $ exps)
+
+      prop "ends one week before the current week" $
+        \(arbWeek -> w) (arbExpenses -> exps) ->
+          (maximum' . Map.keysSet $ wdSmoothSums (weeklyData w "" exps))
+          `shouldBe`
+          (pred w <$ guard (not . null . filter (<w)
+                            . map (weekOfDay . expDate) $ exps))
+
+      it "smoothes out 1 empty week" $
+        let exps = [ Expense (toEnum 0) 10 "" ""
+                   , Expense (toEnum 14) 10 "" ""
+                   ]
+            wd = weeklyData (Week 2010 1) "" exps
+        in  (filter (==0) . Map.elems . wdSmoothSums $ wd) `shouldBe` []
 
 
 

@@ -21,6 +21,11 @@ maximum' x
   | Fold.null x = Nothing
   | otherwise = Just $ Fold.maximum x
 
+minMax' :: (Foldable t, Ord a) => t a -> Maybe (a, a)
+minMax' x
+  | Fold.null x = Nothing
+  | otherwise = Just (Fold.minimum x, Fold.maximum x)
+
 movingAvgs :: Fractional a => Int -> [a] -> [a]
 movingAvgs r = map (avg . catMaybes) . neighborhoods r
   where

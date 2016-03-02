@@ -107,13 +107,11 @@ data WeeklyData = WeeklyData
 weeklyData :: Week -> String -> [Expense] -> WeeklyData
 weeklyData currentWeek name exps = WeeklyData{..}
   where
-    wdSums = fillMissingInnerWeeks 0 currentWeek
-           . fmap (sum . map expAmount)
-           . tagGroupBy (weekOfDay . expDate)
-           $ exps
+    wdSums = fillMissingInnerWeeks 0 sums
     wdSmoothSums = smoothSums currentWeek wdSums
     wdName = name
     wdRelevancy = length exps
+    sums = fmap (sum . map expAmount) . tagGroupBy (weekOfDay . expDate) $ exps
 
 weeklyCharts :: [WeeklyData] -> Chart.StackedLayouts Week
 weeklyCharts wds = Default.def
@@ -142,20 +140,17 @@ weeklyChart WeeklyData{..} = Default.def
 
 
 
-fillMissingInnerWeeks :: a -> Week -> Map Week a -> Map Week a
-fillMissingInnerWeeks x currentWeek weekSums = weekSums `Map.union` zeroes
+fillMissingInnerWeeks :: a -> Map Week a -> Map Week a
+fillMissingInnerWeeks x weekSums = Map.union weekSums zeroes
   where
-    zeroes
-      | Map.null weekSums = Map.empty
-      | otherwise = Map.fromList . map (,x) $ enumFromTo mi currentWeek
-    (mi, _) = Map.findMin weekSums
+    zeroes = case minMax' $ Map.keysSet weekSums of
+      Nothing -> Map.empty
+      Just (mi, ma) -> Map.fromList . map (,x) $ enumFromTo mi ma
 
 smoothSums :: Week -> Map Week Int -> Map Week Int
 smoothSums currentWeek weeksSums = Map.fromAscList $ zip closedWeeks avgs
   where
-    closedWeeks
-      | last weeks == currentWeek = init weeks
-      | otherwise = weeks
+    closedWeeks = takeWhile (< currentWeek) weeks
     avgs = map (floor :: Double -> Int) . movingAvgs 2 . map fromIntegral $ sums
     (weeks, sums) = unzip . Map.toList $ weeksSums
 
