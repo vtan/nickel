@@ -107,8 +107,8 @@ data WeeklyData = WeeklyData
 weeklyData :: Week -> String -> [Expense] -> WeeklyData
 weeklyData currentWeek name exps = WeeklyData{..}
   where
-    wdSums = fillMissingInnerWeeks 0 sums
-    wdSmoothSums = smoothSums currentWeek wdSums
+    wdSums = fillMissingInnerWeeks sums
+    wdSmoothSums = smoothSums currentWeek sums
     wdName = name
     wdRelevancy = length exps
     sums = fmap (sum . map expAmount) . tagGroupBy (weekOfDay . expDate) $ exps
@@ -140,19 +140,25 @@ weeklyChart WeeklyData{..} = Default.def
 
 
 
-fillMissingInnerWeeks :: a -> Map Week a -> Map Week a
-fillMissingInnerWeeks x weekSums = Map.union weekSums zeroes
+fillMissingInnerWeeks :: Num a => Map Week a -> Map Week a
+fillMissingInnerWeeks weekSums = Map.union weekSums zeroWeeks
   where
-    zeroes = case minMax' $ Map.keysSet weekSums of
+    zeroWeeks = case minMax' $ Map.keysSet weekSums of
       Nothing -> Map.empty
-      Just (mi, ma) -> Map.fromList . map (,x) $ enumFromTo mi ma
+      Just (mi, ma) -> zeroes mi ma
 
 smoothSums :: Week -> Map Week Int -> Map Week Int
 smoothSums currentWeek weeksSums = Map.fromAscList $ zip closedWeeks avgs
   where
     closedWeeks = takeWhile (< currentWeek) weeks
     avgs = map (floor :: Double -> Int) . movingAvgs 2 . map fromIntegral $ sums
-    (weeks, sums) = unzip . Map.toList $ weeksSums
+    (weeks, sums) = unzip . Map.toList $ Map.union weeksSums zeroWeeks
+    zeroWeeks = case minimum' $ Map.keysSet weeksSums of
+      Nothing -> Map.empty
+      Just mi -> zeroes mi currentWeek
+
+zeroes :: Num a => Week -> Week -> Map Week a
+zeroes mi ma = Map.fromList . map (,0) $ enumFromTo mi ma
 
 -- Show the next year/month in the label if the year/month changes that week.
 weekLabel :: Week -> (Maybe String, Maybe String)

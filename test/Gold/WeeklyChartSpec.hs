@@ -111,7 +111,7 @@ spec = do
         let exps = [ Expense (toEnum 0) 10 "" ""
                    , Expense (toEnum 14) 10 "" ""
                    ]
-            wd = weeklyData (Week 2010 1) "" exps
+            wd = weeklyData (weekOfDay $ toEnum 21) "" exps
         in  (filter (==0) . Map.elems . wdSmoothSums $ wd) `shouldBe` []
 
 
