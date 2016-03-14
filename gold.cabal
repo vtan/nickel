@@ -49,11 +49,12 @@ test-suite gold-test
   hs-source-dirs: test
   main-is: Spec.hs
   other-modules:
+    Gold.TestUtil,
     Gold.MainSpec,
     Gold.AccountSpec,
     Gold.UtilSpec,
     Gold.WeeklyChartSpec
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N 
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
     base,
     gold,

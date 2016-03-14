@@ -1,8 +1,12 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Gold.WeeklyChartSpec (spec) where
 
+import Prelude hiding (exp)
+
 import Gold.Account
+import Gold.TestUtil
 import Gold.Util
 import Gold.WeeklyChart
 
@@ -24,26 +28,31 @@ spec = do
 
     describe "fromEnum" $
 
-      prop "is right inverse to toEnum" $ \n ->
+      prop "is right inverse to toEnum" $
+        forArb ints "n" $ \n ->
         fromEnum (toEnum n :: Week) `shouldBe` n
 
     describe "toEnum" $
 
-      prop "is right inverse to fromEnum" $ \n ->
-        let w = toEnum n :: Week
-        in  (toEnum . fromEnum $ w) `shouldBe` w
+      prop "is right inverse to fromEnum" $
+        forArb ints "n" $ \n ->
+        intro (toEnum n :: Week) "week" $ \w ->
+        (toEnum . fromEnum $ w) `shouldBe` w
 
   describe "fstOfYearOnWeek" $ do
 
-    prop "Just if 1st Jan is that week" $ \(arbYear -> y) ->
-      let d = Time.fromGregorian y 1 1
-      in  fstOfYearOnWeek (weekOfDay d) `shouldBe` Just d
+    prop "Just if 1st Jan is that week" $
+      forArb years "year" $ \y ->
+      intro (Time.fromGregorian y 1 1) "1st Jan" $ \d ->
+      fstOfYearOnWeek (weekOfDay d) `shouldBe` Just d
 
   describe "fstOfMonthOnWeek" $ do
 
-    prop "Just if the 1st is that week" $ \(arbYear -> y) (arbMonth -> m) ->
-      let d = Time.fromGregorian y m 1
-      in  fstOfMonthOnWeek (weekOfDay d) `shouldBe` Just d
+    prop "Just if the 1st is that week" $
+      forArb years "year" $ \y ->
+      forArb months "month" $ \m ->
+      intro (Time.fromGregorian y m 1) "1st of month" $ \d ->
+      fstOfMonthOnWeek (weekOfDay d) `shouldBe` Just d
 
   describe "weeklyData" $ do
 
@@ -53,19 +62,26 @@ spec = do
         wdSums (weeklyData (Week 2000 1) "a" []) `shouldBe` mempty
 
       prop "starts on the week of the earliest expense" $
-        \(arbWeek -> w) (arbExpenses -> exps) ->
-          (minimum' . Map.keysSet $ wdSums (weeklyData w "" exps)) `shouldBe`
-          (minimum' . map (weekOfDay . expDate) $ exps)
+        forArb weeks "current week" $ \w ->
+        forArb (nonEmptyListsOf expenses) "exps" $ \exps ->
+        intro (Map.keysSet $ wdSums (weeklyData w "" exps))
+              "weeks of wdSums" $ \weeksSums ->
+        minimum' weeksSums `shouldBe`
+        (minimum' . map (weekOfDay . expDate) $ exps)
 
       prop "ends on the week of the last expense" $
-        \(arbWeek -> w) (arbExpenses -> exps) ->
-          (maximum' . Map.keysSet $ wdSums (weeklyData w "" exps)) `shouldBe`
-          (maximum' . map (weekOfDay . expDate) $ exps)
+        forArb weeks "current week" $ \w ->
+        forArb (nonEmptyListsOf expenses) "exps" $ \exps ->
+        intro (Map.keysSet $ wdSums (weeklyData w "" exps))
+              "weeks of wdSums" $ \weeksSums ->
+        maximum' weeksSums `shouldBe`
+        (maximum' . map (weekOfDay . expDate) $ exps)
 
       prop "has the same sum as expenses" $
-        \(arbWeek -> w) (arbExpenses -> exps) ->
-          (Fold.sum . wdSums $ weeklyData w "" exps) `shouldBe`
-          (sum . map expAmount $ exps)
+        forArb weeks "current week" $ \w ->
+        forArb (nonEmptyListsOf expenses) "exps" $ \exps ->
+        (Fold.sum . wdSums $ weeklyData w "" exps) `shouldBe`
+        (sum . map expAmount $ exps)
 
     describe "wdSmoothSums" $ do
 
@@ -74,17 +90,22 @@ spec = do
 
       prop "starts on the week of the earliest expense before the current\
            \ week" $
-        \(arbWeek -> w) (arbExpenses -> exps) ->
-          (minimum' . Map.keysSet $ wdSmoothSums (weeklyData w "" exps))
-          `shouldBe`
-          (minimum' . filter (<w) . map (weekOfDay . expDate) $ exps)
+        forArb weeks "current week" $ \w ->
+        forArb (nonEmptyListsOf expenses) "exps" $ \exps ->
+        intro (Map.keysSet . wdSmoothSums $ weeklyData w "" exps)
+              "weeks of wdSmoothSums" $ \weeksSmSums ->
+        minimum' weeksSmSums `shouldBe`
+        (minimum' . filter (<w) . map (weekOfDay . expDate) $ exps)
 
       prop "ends one week before the current week" $
-        \(arbWeek -> w) (arbExpenses -> exps) ->
-          (maximum' . Map.keysSet $ wdSmoothSums (weeklyData w "" exps))
-          `shouldBe`
-          (pred w <$ guard (not . null . filter (<w)
-                            . map (weekOfDay . expDate) $ exps))
+        forArb weeks "current week" $ \w ->
+        forArb (nonEmptyListsOf expenses) "exps" $ \exps ->
+        intro (Map.keysSet . wdSmoothSums $ weeklyData w "" exps)
+              "weeks of wdSmoothSums" $ \weeksSmSums ->
+        maximum' weeksSmSums
+        `shouldBe`
+        (pred w <$
+          guard (not . null . filter (<w) . map (weekOfDay . expDate) $ exps))
 
       it "smoothes out 1 empty week" $
         let exps = [ Expense (toEnum 0) 10 "" ""
@@ -95,22 +116,22 @@ spec = do
 
 
 
-newtype ArbYear = ArbYear { arbYear :: Integer } deriving (Show)
-instance Arbitrary ArbYear where arbitrary = ArbYear <$> choose (1900, 2100)
+years :: Arb Integer
+years = arbNoShrink $ fmap (1858+) arbitrarySizedNatural
 
-newtype ArbMonth = ArbMonth { arbMonth :: Int } deriving (Show)
-instance Arbitrary ArbMonth where arbitrary = ArbMonth <$> choose (1, 12)
+months :: Arb Int
+months = arbNoShrink $ choose (1, 12)
 
-newtype ArbWeek = ArbWeek { arbWeek :: Week } deriving (Show)
-instance Arbitrary ArbWeek where
-  arbitrary = ArbWeek . weekOfDay . Time.ModifiedJulianDay . getPositive
-          <$> arbitrary
+weeks :: Arb Week
+weeks = arbNoShrink $
+  weekOfDay . Time.ModifiedJulianDay <$> arbitrarySizedNatural
 
-newtype ArbExpenses = ArbExpenses { arbExpenses :: [Expense] } deriving (Show)
-instance Arbitrary ArbExpenses where
-  arbitrary = ArbExpenses <$> listOf1 genExp
-    where
-      genExp = Expense <$> genDay <*> genPos <*> genStr <*> genStr
-      genDay = Time.ModifiedJulianDay . getPositive <$> arbitrary
-      genStr = listOf1 $ elements ['a'..'z']
-      genPos = getPositive <$> arbitrary
+expenses :: Arb Expense
+expenses = Arb{..}
+  where
+    arbGen = Expense <$> genDay <*> genPos <*> genStr <*> genStr
+    arbShrink Expense{ expName = "", expCat = "" } = []
+    arbShrink exp = [exp { expName = "", expCat = "" }]
+    genDay = Time.ModifiedJulianDay . getPositive <$> arbitrary
+    genStr = listOf1 $ elements ['a'..'z']
+    genPos = getPositive <$> arbitrary
