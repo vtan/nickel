@@ -3,13 +3,13 @@
 
 module Nickel.UtilSpec (spec) where
 
+import Nickel.TestUtil
 import Nickel.Util
 
 import Data.Ratio
 
 import Test.Hspec
 import Test.Hspec.QuickCheck
-import Test.QuickCheck
 
 
 
@@ -26,13 +26,15 @@ spec = do
       ]
 
     prop "has the same length as the input" $
-      \(getNonNegative -> r) (xs :: [Int]) ->
-        length (neighborhoods r xs) `shouldBe` length xs
+      forArb nats "window radius" $ \r ->
+      forArb (listsOf ints) "input list" $ \xs ->
+      length (neighborhoods r xs) `shouldBe` length xs
 
     prop "contains windows with the correct size" $
-      \(getNonNegative -> r) (xs :: [Int]) ->
-        let n = 2 * r + 1
-        in  map length (neighborhoods r xs) `shouldBe` map (const n) xs
+      forArb nats "window radius" $ \r ->
+      forArb (listsOf ints) "input list" $ \xs ->
+      intro (2 * r + 1) "window length" $ \n ->
+      map length (neighborhoods r xs) `shouldBe` map (const n) xs
 
   describe "movingAvgs" $ do
 
@@ -46,5 +48,6 @@ spec = do
       ]
 
     prop "has the same length as the input" $
-      \(getNonNegative -> r) (xs :: [Rational]) ->
-        length (movingAvgs r xs) `shouldBe` length xs
+      forArb nats "window radius" $ \r ->
+      forArb (listsOf rationals) "input list" $ \xs ->
+      length (movingAvgs r xs) `shouldBe` length xs

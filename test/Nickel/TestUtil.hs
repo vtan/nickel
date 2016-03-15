@@ -18,6 +18,12 @@ arbArbitrary = Arb
   , arbShrink = shrink
   }
 
+arbArbitraryIso :: Arbitrary a => (a -> b) -> (b -> a) -> Arb b
+arbArbitraryIso f g = Arb
+  { arbGen = fmap f arbitrary
+  , arbShrink = map f . shrink . g
+  }
+
 arbNoShrink :: Gen a -> Arb a
 arbNoShrink x = Arb
   { arbGen = x
@@ -35,6 +41,12 @@ intro x name prop = counterexample (name ++ ": " ++ show x) (prop x)
 
 ints :: Arb Int
 ints = arbArbitrary
+
+nats :: Arb Int
+nats = arbArbitraryIso getNonNegative NonNegative
+
+rationals :: Arb Rational
+rationals = arbArbitrary
 
 listsOf :: Arb a -> Arb [a]
 listsOf Arb{..} = Arb
