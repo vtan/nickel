@@ -1,4 +1,4 @@
-module Nickel.Main where
+module Nickel.Main (main) where
 
 import Nickel.Account
 import Nickel.Util

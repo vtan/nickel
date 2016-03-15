@@ -1,7 +1,12 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Nickel.Account where
+module Nickel.Account
+  ( ParsedAccount(..)
+  , Income(..)
+  , Expense(..)
+  , parseAccounts
+  ) where
 
 import Control.Applicative
 import Control.Arrow

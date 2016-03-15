@@ -1,4 +1,11 @@
-module Nickel.Util where
+module Nickel.Util
+  ( tagGroupBy
+  , minimum'
+  , maximum'
+  , minMax'
+  , movingAvgs
+  , neighborhoods
+  ) where
 
 import Data.List
 import Data.Map (Map)

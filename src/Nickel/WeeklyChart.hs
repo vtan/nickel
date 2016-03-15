@@ -2,7 +2,19 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Nickel.WeeklyChart where
+module Nickel.WeeklyChart
+  ( Week(..)
+  , weekOfDay
+  , thisWeek
+  , mondayOfWeek
+  , fstOfYearOnWeek
+  , fstOfMonthOnWeek
+
+  , WeeklyData(..)
+  , weeklyData
+  , weeklyCharts
+  , weeklyChart
+  ) where
 
 import Nickel.Account
 import Nickel.Util
