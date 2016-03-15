@@ -1,8 +1,8 @@
-module Gold.Main where
+module Nickel.Main where
 
-import Gold.Account
-import Gold.Util
-import Gold.WeeklyChart
+import Nickel.Account
+import Nickel.Util
+import Nickel.WeeklyChart
 
 import Control.Monad
 import System.IO

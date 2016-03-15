@@ -1,4 +1,4 @@
-module Gold.MainSpec (spec) where
+module Nickel.MainSpec (spec) where
 
 import Test.Hspec
 

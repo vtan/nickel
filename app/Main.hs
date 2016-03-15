@@ -1,6 +1,6 @@
 module Main (main) where
 
-import qualified Gold.Main
+import qualified Nickel.Main
 
 main :: IO ()
-main = Gold.Main.main
+main = Nickel.Main.main

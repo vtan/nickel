@@ -1,4 +1,4 @@
-module Gold.Util where
+module Nickel.Util where
 
 import Data.List
 import Data.Map (Map)

@@ -1,9 +1,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Gold.UtilSpec (spec) where
+module Nickel.UtilSpec (spec) where
 
-import Gold.Util
+import Nickel.Util
 
 import Data.Ratio
 
@@ -15,7 +15,6 @@ import Test.QuickCheck
 
 spec :: Spec
 spec = do
-
 
   describe "neighborhoods" $ do
 

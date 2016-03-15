@@ -1,4 +1,4 @@
-name: gold
+name: nickel
 version: 0
 --category:
 --synopsis:
@@ -18,10 +18,10 @@ cabal-version: >=1.10
 library
   hs-source-dirs: src
   exposed-modules:
-    Gold.Main,
-    Gold.Account,
-    Gold.Util,
-    Gold.WeeklyChart
+    Nickel.Main,
+    Nickel.Account,
+    Nickel.Util,
+    Nickel.WeeklyChart
   ghc-options: -Wall -O2
   build-depends:
     base,
@@ -37,27 +37,27 @@ library
     parsec
   default-language: Haskell2010
 
-executable gold
+executable nickel
   hs-source-dirs: app
   main-is: Main.hs
   ghc-options: -Wall -O2 -threaded -rtsopts -with-rtsopts=-N
-  build-depends: base, gold
+  build-depends: base, nickel
   default-language: Haskell2010
 
-test-suite gold-test
+test-suite nickel-test
   type: exitcode-stdio-1.0
   hs-source-dirs: test
   main-is: Spec.hs
   other-modules:
-    Gold.TestUtil,
-    Gold.MainSpec,
-    Gold.AccountSpec,
-    Gold.UtilSpec,
-    Gold.WeeklyChartSpec
+    Nickel.TestUtil,
+    Nickel.MainSpec,
+    Nickel.AccountSpec,
+    Nickel.UtilSpec,
+    Nickel.WeeklyChartSpec
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
     base,
-    gold,
+    nickel,
     hspec,
     QuickCheck,
     containers,

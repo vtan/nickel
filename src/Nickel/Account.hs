@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Gold.Account where
+module Nickel.Account where
 
 import Control.Applicative
 import Control.Arrow

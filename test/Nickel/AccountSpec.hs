@@ -1,6 +1,6 @@
-module Gold.AccountSpec (spec) where
+module Nickel.AccountSpec (spec) where
 
-import Gold.Account
+import Nickel.Account
 
 import Test.Hspec
 import qualified Data.Time as Time

@@ -2,10 +2,10 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Gold.WeeklyChart where
+module Nickel.WeeklyChart where
 
-import Gold.Account
-import Gold.Util
+import Nickel.Account
+import Nickel.Util
 
 import Control.Arrow
 import Data.Function

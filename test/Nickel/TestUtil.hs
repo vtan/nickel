@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
-module Gold.TestUtil where
+module Nickel.TestUtil where
 
 import Test.QuickCheck
 import Test.QuickCheck.Property

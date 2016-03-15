@@ -1,15 +1,15 @@
 module Main (main) where
 
-import qualified Gold.MainSpec
-import qualified Gold.AccountSpec
-import qualified Gold.UtilSpec
-import qualified Gold.WeeklyChartSpec
+import qualified Nickel.MainSpec
+import qualified Nickel.AccountSpec
+import qualified Nickel.UtilSpec
+import qualified Nickel.WeeklyChartSpec
 
 import Test.Hspec
 
 main :: IO ()
 main = hspec $ do
-  describe "Gold.Main" Gold.MainSpec.spec
-  describe "Gold.Account" Gold.AccountSpec.spec
-  describe "Gold.Util" Gold.UtilSpec.spec
-  describe "Gold.WeeklyChart" Gold.WeeklyChartSpec.spec
+  describe "Nickel.Main" Nickel.MainSpec.spec
+  describe "Nickel.Account" Nickel.AccountSpec.spec
+  describe "Nickel.Util" Nickel.UtilSpec.spec
+  describe "Nickel.WeeklyChart" Nickel.WeeklyChartSpec.spec

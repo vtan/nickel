@@ -1,14 +1,14 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Gold.WeeklyChartSpec (spec) where
+module Nickel.WeeklyChartSpec (spec) where
 
 import Prelude hiding (exp)
 
-import Gold.Account
-import Gold.TestUtil
-import Gold.Util
-import Gold.WeeklyChart
+import Nickel.Account
+import Nickel.TestUtil
+import Nickel.Util
+import Nickel.WeeklyChart
 
 import Control.Monad
 import qualified Data.Foldable as Fold
