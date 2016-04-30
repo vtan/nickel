@@ -12,7 +12,6 @@ module Nickel.WeeklyChart
 
   , WeeklyData(..)
   , weeklyData
-  , weeklyCharts
   , weeklyChart
   ) where
 
@@ -24,7 +23,6 @@ import Data.Function
 import Data.List
 import Data.Maybe
 import Data.Map (Map)
-import Data.Ord
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -112,29 +110,18 @@ fstOfMonthOnWeek yw
 data WeeklyData = WeeklyData
   { wdSums :: Map Week Int
   , wdSmoothSums :: Map Week Int
-  , wdName :: String
-  , wdRelevancy :: Int
   } deriving (Eq, Show)
 
-weeklyData :: Week -> String -> [Expense] -> WeeklyData
-weeklyData currentWeek name exps = WeeklyData{..}
+weeklyData :: Week -> [Expense] -> WeeklyData
+weeklyData currentWeek exps = WeeklyData{..}
   where
     wdSums = fillMissingInnerWeeks sums
     wdSmoothSums = smoothSums currentWeek sums
-    wdName = name
-    wdRelevancy = length exps
     sums = fmap (sum . map expAmount) . tagGroupBy (weekOfDay . expDate) $ exps
 
-weeklyCharts :: [WeeklyData] -> Chart.StackedLayouts Week
-weeklyCharts wds = Default.def
-  & Lens.set Chart.slayouts_layouts layouts
-  where
-    layouts = map Chart.StackedLayout charts
-    charts = map weeklyChart . sortBy (comparing $ Down . wdRelevancy) $ wds
-
-weeklyChart :: WeeklyData -> Chart.Layout Week Int
-weeklyChart WeeklyData{..} = Default.def
-  & Lens.set Chart.layout_title wdName
+weeklyChart :: String -> WeeklyData -> Chart.Layout Week Int
+weeklyChart title WeeklyData{..} = Default.def
+  & Lens.set Chart.layout_title title
   . Lens.set Chart.layout_plots [sumPlot, smoothSumPlot]
   where
     sumPlot = Chart.plotBars $ Default.def

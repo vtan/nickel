@@ -4,10 +4,13 @@ import Nickel.Account
 import Nickel.Util
 import Nickel.WeeklyChart
 
+import Control.Arrow
 import Control.Monad
+import Data.List
+import Data.Ord
 import System.IO
-import qualified Data.Map as Map
 
+import qualified Data.Map as Map
 import qualified Graphics.Rendering.Chart as Chart
 import qualified Graphics.Rendering.Chart.Backend.Cairo as Chart
 
@@ -20,10 +23,17 @@ main = do
   let
     accs = parseAccounts . lines $ content
     exps = [e | ParsedExpense e <- accs]
-    catsExpss = tagGroupBy expCat $ exps
-    catsWds = Map.mapWithKey (\cat -> weeklyData w cat) catsExpss
-    chart = weeklyCharts . Map.elems $ catsWds
-    heightFactor = Map.size catsWds
+    catsWds =
+      map (id *** weeklyData w)
+      . sortBy (comparing $ Down . length . snd)
+      . Map.toList
+      . tagGroupBy expCat
+      $ exps
+    chart =
+      flip Chart.StackedLayouts False
+      . map (Chart.StackedLayout . uncurry weeklyChart)
+      $ catsWds
+    heightFactor = length catsWds
     format = Chart.FileOptions (1000, heightFactor * 500) Chart.SVG
   void . Chart.renderableToFile format "weekly.svg" . Chart.toRenderable $ chart
   forM_ [n | InvalidLine n <- accs] $ \n ->

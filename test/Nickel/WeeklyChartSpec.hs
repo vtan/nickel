@@ -59,12 +59,12 @@ spec = do
     describe "wdSums" $ do
 
       it "is empty for empty expenses" $
-        wdSums (weeklyData (Week 2000 1) "a" []) `shouldBe` mempty
+        wdSums (weeklyData (Week 2000 1) []) `shouldBe` mempty
 
       prop "starts on the week of the earliest expense" $
         forArb weeks "current week" $ \w ->
         forArb (nonEmptyListsOf expenses) "exps" $ \exps ->
-        intro (Map.keysSet $ wdSums (weeklyData w "" exps))
+        intro (Map.keysSet $ wdSums (weeklyData w exps))
               "weeks of wdSums" $ \weeksSums ->
         minimum' weeksSums `shouldBe`
         (minimum' . map (weekOfDay . expDate) $ exps)
@@ -72,7 +72,7 @@ spec = do
       prop "ends on the week of the last expense" $
         forArb weeks "current week" $ \w ->
         forArb (nonEmptyListsOf expenses) "exps" $ \exps ->
-        intro (Map.keysSet $ wdSums (weeklyData w "" exps))
+        intro (Map.keysSet $ wdSums (weeklyData w exps))
               "weeks of wdSums" $ \weeksSums ->
         maximum' weeksSums `shouldBe`
         (maximum' . map (weekOfDay . expDate) $ exps)
@@ -80,19 +80,19 @@ spec = do
       prop "has the same sum as expenses" $
         forArb weeks "current week" $ \w ->
         forArb (nonEmptyListsOf expenses) "exps" $ \exps ->
-        (Fold.sum . wdSums $ weeklyData w "" exps) `shouldBe`
+        (Fold.sum . wdSums $ weeklyData w exps) `shouldBe`
         (sum . map expAmount $ exps)
 
     describe "wdSmoothSums" $ do
 
       it "is empty for empty expenses" $
-        wdSmoothSums (weeklyData (Week 2000 1) "a" []) `shouldBe` mempty
+        wdSmoothSums (weeklyData (Week 2000 1) []) `shouldBe` mempty
 
       prop "starts on the week of the earliest expense before the current\
            \ week" $
         forArb weeks "current week" $ \w ->
         forArb (nonEmptyListsOf expenses) "exps" $ \exps ->
-        intro (Map.keysSet . wdSmoothSums $ weeklyData w "" exps)
+        intro (Map.keysSet . wdSmoothSums $ weeklyData w exps)
               "weeks of wdSmoothSums" $ \weeksSmSums ->
         minimum' weeksSmSums `shouldBe`
         (minimum' . filter (<w) . map (weekOfDay . expDate) $ exps)
@@ -100,7 +100,7 @@ spec = do
       prop "ends one week before the current week" $
         forArb weeks "current week" $ \w ->
         forArb (nonEmptyListsOf expenses) "exps" $ \exps ->
-        intro (Map.keysSet . wdSmoothSums $ weeklyData w "" exps)
+        intro (Map.keysSet . wdSmoothSums $ weeklyData w exps)
               "weeks of wdSmoothSums" $ \weeksSmSums ->
         maximum' weeksSmSums
         `shouldBe`
@@ -111,7 +111,7 @@ spec = do
         let exps = [ Expense (toEnum 0) 10 "" ""
                    , Expense (toEnum 14) 10 "" ""
                    ]
-            wd = weeklyData (weekOfDay $ toEnum 21) "" exps
+            wd = weeklyData (weekOfDay $ toEnum 21) exps
         in  (filter (==0) . Map.elems . wdSmoothSums $ wd) `shouldBe` []
 
 
