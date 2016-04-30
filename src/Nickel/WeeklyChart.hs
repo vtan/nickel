@@ -150,7 +150,7 @@ smoothSums :: Week -> Map Week Int -> Map Week Int
 smoothSums currentWeek weeksSums = Map.fromAscList $ zip closedWeeks avgs
   where
     closedWeeks = takeWhile (< currentWeek) weeks
-    avgs = map (floor :: Double -> Int) . movingAvgs 2 . map fromIntegral $ sums
+    avgs = map (floor :: Double -> Int) . movingAvgs 3 . map fromIntegral $ sums
     (weeks, sums) = unzip . Map.toList $ Map.union weeksSums zeroWeeks
     zeroWeeks = case minimum' $ Map.keysSet weeksSums of
       Nothing -> Map.empty

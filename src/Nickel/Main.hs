@@ -29,10 +29,11 @@ main = do
       . Map.toList
       . tagGroupBy expCat
       $ exps
+    totalWd = ("Total", weeklyData w exps)
     chart =
       flip Chart.StackedLayouts False
       . map (Chart.StackedLayout . uncurry weeklyChart)
-      $ catsWds
+      $ totalWd : catsWds
     heightFactor = length catsWds
     format = Chart.FileOptions (1000, heightFactor * 500) Chart.SVG
   void . Chart.renderableToFile format "weekly.svg" . Chart.toRenderable $ chart
