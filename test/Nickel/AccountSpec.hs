@@ -19,6 +19,7 @@ spec =
         , "+ 2015-01-01 103 \"ggg\""
         , "+2015-12-21   12345 \"some thing\""
         , "+ 2015-01-01 100 \"ggg\" \"kkk\""
+        , "+ 2015-01-01 103 ggg"
         ]
       `shouldBe`
         [ InvalidLine 1
@@ -28,6 +29,8 @@ spec =
         , ParsedIncome $ Income
             (Time.fromGregorian 2015 12 21) 12345 "some thing"
         , InvalidLine 5
+        , ParsedIncome $ Income
+            (Time.fromGregorian 2015 1 1) 103 "ggg"
         ]
 
     it "parses expenses" $
@@ -37,6 +40,7 @@ spec =
         , "- 2015-01-01 103 \"ggg\" \"kkk\""
         , "-2015-12-21   12345 \"some thing\"   \"cate  gory\""
         , "- 2015-01-01 100 \"ggg\" \"kkk\" \"lll\""
+        , "- 2015-01-01 103 ggg \"kkk lll\""
         ]
       `shouldBe`
         [ InvalidLine 1
@@ -46,4 +50,6 @@ spec =
         , ParsedExpense $ Expense
             (Time.fromGregorian 2015 12 21) 12345 "some thing" "cate  gory"
         , InvalidLine 5
+        , ParsedExpense $ Expense
+            (Time.fromGregorian 2015 1 1) 103 "ggg" "kkk lll"
         ]

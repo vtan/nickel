@@ -83,6 +83,8 @@ amount :: Parsec.Parser Int
 amount = read <$> Parsec.many1 Parsec.digit
 
 string :: Parsec.Parser String
-string = Parsec.between quote quote (Parsec.many1 $ Parsec.noneOf "\"")
+string =
+  Parsec.many1 (Parsec.noneOf " \"")
+  <|> Parsec.between quote quote (Parsec.many1 $ Parsec.noneOf "\"")
   where
     quote = Parsec.char '"'
