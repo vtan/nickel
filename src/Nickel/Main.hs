@@ -18,7 +18,7 @@ import qualified Graphics.Rendering.Chart.Backend.Cairo as Chart
 
 main :: IO ()
 main = do
-  content <- readFile "/home/vtan/doc/pez"
+  content <- getContents
   w <- thisWeek
   let
     accs = parseAccounts . lines $ content
