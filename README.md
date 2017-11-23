@@ -1,4 +1,4 @@
-# nickel
+# nickel-hs
 
 Generates an SVG chart displaying weekly financial expenses split into categories.
 
